@@ -1,0 +1,1 @@
+# otus_project_cv_automatic_test
