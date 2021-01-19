@@ -1,0 +1,57 @@
+version: '2.1'
+
+services:
+
+  postgres:
+    image: postgres
+    environment:
+        - POSTGRES_USER=airflow
+        - POSTGRES_PASSWORD=airflow
+        - POSTGRES_DB=airflow
+
+  webserver:
+    image: puckel/docker-airflow
+    restart: always
+    depends_on:
+        - postgres
+    environment:
+        - LOAD_EX=n
+        - EXECUTOR=Local
+    volumes:
+        - ./dags:/usr/local/airflow/dags
+        - ./data:/usr/local/airflow/data
+        - ./requirements.txt:/requirements.txt
+        - ./storage:/usr/local/storage
+    ports:
+        - "8080:8080"
+    command: webserver
+    healthcheck:
+        test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+        interval: 30s
+        timeout: 30s
+        retries: 3
+
+  postgres_superset:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: superset
+      POSTGRES_PASSWORD: superset
+      POSTGRES_USER: superset
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+  superset:
+    image: amancevice/superset
+    restart: always
+    depends_on:
+      - postgres_superset
+    environment:
+      MAPBOX_API_KEY: ${MAPBOX_API_KEY}
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./superset_config.py:/etc/superset/superset_config.py
+
+volumes:
+  postgres:
